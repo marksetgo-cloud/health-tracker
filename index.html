@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            padding-bottom: 80px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .points-display {
+            font-size: 48px;
+            font-weight: bold;
+            color: #764ba2;
+            margin: 15px 0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .streak-display {
+            font-size: 24px;
+            margin-top: 15px;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .action-grid {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .action-btn {
+            background: white;
+            border: none;
+            border-radius: 15px;
+            padding: 20px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+
+        .action-btn:active {
+            transform: scale(0.98);
+        }
+
+        .action-btn .emoji {
+            font-size: 32px;
+            margin-right: 15px;
+        }
+
+        .action-btn .points {
+            color: #667eea;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .nav-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            padding: 15px;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
+        }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            padding: 10px 20px;
+            cursor: pointer;
+            opacity: 0.5;
+            transition: opacity 0.3s ease;
+        }
+
+        .nav-btn.active {
+            opacity: 1;
+        }
+
+        .stats-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .stats-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+
+        .reward-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .reward-card.unlocked {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .reward-card h3 {
+            margin-bottom: 10px;
+        }
+
+        .reward-progress {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .reward-card.unlocked .reward-progress {
+            color: white;
+        }
+
+        .celebration {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            text-align: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .celebration.show {
+            display: block;
+            animation: popIn 0.3s ease;
+        }
+
+        @keyframes popIn {
+            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        .celebration h2 {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .celebration p {
+            font-size: 24px;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            display: none;
+        }
+
+        .overlay.show {
+            display: block;
+        }
+
+        .chart {
+            width: 100%;
+            height: 200px;
+            margin-top: 20px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            gap: 10px;
+        }
+
+        .chart-bar {
+            flex: 1;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            border-radius: 5px 5px 0 0;
+            position: relative;
+            min-height: 10px;
+            transition: height 0.3s ease;
+        }
+
+        .chart-bar .label {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: #666;
+        }
+
+        .chart-bar .value {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .settings-btn {
+            background: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin: 10px 0;
+            width: 100%;
+        }
+
+        .export-data {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 10px;
+            font-size: 12px;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Home Screen -->
+        <div id="homeScreen" class="screen active">
+            <div class="header">
+                <h1>💪 Health Tracker</h1>
+                <div class="points-display" id="todayPoints">0</div>
+                <div style="color: #666; font-size: 14px;">points today</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressBar" style="width: 0%">
+                        <span id="progressText">0%</span>
+                    </div>
+                </div>
+                <div class="streak-display" id="streakDisplay">🔥 Start your streak!</div>
+            </div>
+
+            <div class="action-grid" id="actionGrid">
+                <!-- Actions will be dynamically added here -->
+            </div>
+        </div>
+
+        <!-- Stats Screen -->
+        <div id="statsScreen" class="screen">
+            <div class="stats-card">
+                <h3>📊 This Week</h3>
+                <div class="stat-item">
+                    <span>Total Points</span>
+                    <strong id="weekPoints">0</strong>
+                </div>
+                <div class="stat-item">
+                    <span>Actions Completed</span>
+                    <strong id="weekActions">0</strong>
+                </div>
+                <div class="stat-item">
+                    <span>Best Day</span>
+                    <strong id="bestDay">-</strong>
+                </div>
+                <div class="stat-item">
+                    <span>Average Daily</span>
+                    <strong id="avgDaily">0</strong>
+                </div>
+            </div>
+
+            <div class="stats-card">
+                <h3>📈 Last 7 Days</h3>
+                <div class="chart" id="weekChart">
+                    <!-- Chart bars will be added here -->
+                </div>
+            </div>
+
+            <div class="stats-card">
+                <h3>🔥 Current Streaks</h3>
+                <div id="streaksList">
+                    <!-- Streaks will be listed here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Rewards Screen -->
+        <div id="rewardsScreen" class="screen">
+            <div class="stats-card">
+                <h3>⭐ Your Level</h3>
+                <div style="text-align: center; padding: 20px;">
+                    <div style="font-size: 48px; color: #667eea;" id="totalPoints">0</div>
+                    <div style="color: #666;">Total Points All Time</div>
+                </div>
+            </div>
+
+            <div id="rewardsList">
+                <!-- Rewards will be listed here -->
+            </div>
+
+            <div class="stats-card">
+                <h3>⚙️ Settings</h3>
+                <button class="settings-btn" onclick="app.exportData()">📥 Export Data</button>
+                <button class="settings-btn" onclick="app.resetData()" style="background: #ffebee; color: #c62828;">🗑️ Reset All Data</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Bar -->
+    <div class="nav-bar">
+        <button class="nav-btn active" onclick="app.showScreen('home')">🏠</button>
+        <button class="nav-btn" onclick="app.showScreen('stats')">📊</button>
+        <button class="nav-btn" onclick="app.showScreen('rewards')">🏆</button>
+    </div>
+
+    <!-- Celebration Popup -->
+    <div class="overlay" id="overlay"></div>
+    <div class="celebration" id="celebration">
+        <h2>🎉</h2>
+        <p id="celebrationText">+10 Points!</p>
+    </div>
+
+    <script>
+        // Health Tracker App
+        const app = {
+            // Configuration
+            actions: [
+                { id: 'getup', name: 'Get Up in 15 Mins', emoji: '⏰', points: 15 },
+                { id: 'breakfast', name: 'Ate Breakfast', emoji: '🍳', points: 10 },
+                { id: 'vitamins', name: 'Took Vitamins', emoji: '💊', points: 10 },
+                { id: 'water', name: 'Drank Water', emoji: '💧', points: 5 },
+                { id: 'workout5', name: '10 Mins Workout', emoji: '💪', points: 25 },
+                { id: 'workout30', name: '30 Mins+ Workout', emoji: '🏃', points: 60 },
+                { id: 'nicotine', name: 'Delayed Nicotine 30 Mins', emoji: '🚭', points: 20 }
+            ],
+
+            rewards: [
+                { name: 'Weekly Participation', points: 0, description: '$10 Starbucks - Log at least 1 action every day this week (Mon-Sun)', emoji: '✅' },
+                { name: 'Bronze Week', points: 250, description: '$25 Starbucks Credit', emoji: '🥉' },
+                { name: 'Silver Week', points: 400, description: '$50 Starbucks Credit', emoji: '🥈' },
+                { name: 'Gold Week', points: 550, description: '$75 Starbucks Credit', emoji: '🥇' }
+            ],
+
+            // Initialize app
+            init() {
+                this.loadData();
+                this.renderActions();
+                this.updateDisplay();
+                this.startNewDayCheck();
+            },
+
+            // Load data from localStorage
+            loadData() {
+                const saved = localStorage.getItem('healthTrackerData');
+                if (saved) {
+                    this.data = JSON.parse(saved);
+                } else {
+                    this.data = {
+                        history: [], // Array of { date, actionId, points }
+                        streaks: {} // Object of { actionId: count }
+                    };
+                }
+            },
+
+            // Save data to localStorage
+            saveData() {
+                localStorage.setItem('healthTrackerData', JSON.stringify(this.data));
+            },
+
+            // Get today's date string
+            getToday() {
+                return new Date().toISOString().split('T')[0];
+            },
+
+            // Log an action
+            logAction(actionId) {
+                const action = this.actions.find(a => a.id === actionId);
+                if (!action) return;
+
+                const today = this.getToday();
+
+                // IMPORTANT: Can only log actions for TODAY - prevents editing past days
+                // This locks in data once the day is over
+
+                // Check if this specific action was already logged today
+                const alreadyLoggedToday = this.data.history.some(
+                    e => e.actionId === actionId && e.date === today
+                );
+                
+                if (alreadyLoggedToday) {
+                    alert(`✋ You already logged "${action.name}" today! You can log it again tomorrow.`);
+                    return;
+                }
+
+                // Check if any workout was already logged today (workouts are mutually exclusive)
+                if (actionId === 'workout5' || actionId === 'workout30') {
+                    const workoutLoggedToday = this.data.history.some(
+                        e => (e.actionId === 'workout5' || e.actionId === 'workout30') && e.date === today
+                    );
+                    
+                    if (workoutLoggedToday) {
+                        alert('💪 You already logged a workout today! Choose one workout per day.');
+                        return;
+                    }
+                }
+
+                // All checks passed - log the action with TODAY'S date
+                const entry = {
+                    date: today,  // Always uses today's date - no backdating allowed
+                    time: new Date().toISOString(),
+                    actionId: actionId,
+                    points: action.points
+                };
+
+                this.data.history.push(entry);
+                this.updateStreaks(actionId);
+                this.saveData();
+                this.showCelebration(action);
+                this.updateDisplay();
+            },
+
+            // Update streaks
+            updateStreaks(actionId) {
+                const today = this.getToday();
+                const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+                
+                // Check if action was done yesterday
+                const doneYesterday = this.data.history.some(
+                    e => e.actionId === actionId && e.date === yesterday
+                );
+
+                // Check if action done today
+                const doneToday = this.data.history.some(
+                    e => e.actionId === actionId && e.date === today
+                );
+
+                if (!this.data.streaks[actionId]) {
+                    this.data.streaks[actionId] = 0;
+                }
+
+                if (doneToday) {
+                    if (doneYesterday || this.data.streaks[actionId] === 0) {
+                        this.data.streaks[actionId]++;
+                    }
+                }
+            },
+
+            // Show celebration popup
+            showCelebration(action) {
+                const celebration = document.getElementById('celebration');
+                const overlay = document.getElementById('overlay');
+                const text = document.getElementById('celebrationText');
+                
+                text.textContent = `+${action.points} Points!`;
+                celebration.classList.add('show');
+                overlay.classList.add('show');
+
+                setTimeout(() => {
+                    celebration.classList.remove('show');
+                    overlay.classList.remove('show');
+                }, 1500);
+            },
+
+            // Render action buttons
+            renderActions() {
+                const grid = document.getElementById('actionGrid');
+                grid.innerHTML = '';
+
+                this.actions.forEach(action => {
+                    const btn = document.createElement('button');
+                    btn.className = 'action-btn';
+                    btn.innerHTML = `
+                        <div style="display: flex; align-items: center;">
+                            <span class="emoji">${action.emoji}</span>
+                            <span>${action.name}</span>
+                        </div>
+                        <span class="points">+${action.points}</span>
+                    `;
+                    btn.onclick = () => this.logAction(action.id);
+                    grid.appendChild(btn);
+                });
+            },
+
+            // Get today's points
+            getTodayPoints() {
+                const today = this.getToday();
+                return this.data.history
+                    .filter(e => e.date === today)
+                    .reduce((sum, e) => sum + e.points, 0);
+            },
+
+            // Get this week's points (Monday-Sunday)
+            getWeekPoints() {
+                const today = new Date();
+                const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+                
+                // Calculate days since Monday (treating Sunday as end of week)
+                const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+                
+                // Get Monday's date (start of current week)
+                const monday = new Date(today);
+                monday.setDate(today.getDate() - daysSinceMonday);
+                monday.setHours(0, 0, 0, 0);
+                const mondayStr = monday.toISOString().split('T')[0];
+                
+                // Sum points from Monday to today
+                return this.data.history
+                    .filter(e => e.date >= mondayStr)
+                    .reduce((sum, e) => sum + e.points, 0);
+            },
+
+            // Check if logged something every day this week (for participation bonus)
+            hasLoggedEveryDayThisWeek() {
+                const today = new Date();
+                const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+                const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+                
+                // Get Monday's date
+                const monday = new Date(today);
+                monday.setDate(today.getDate() - daysSinceMonday);
+                monday.setHours(0, 0, 0, 0);
+                
+                // Check each day from Monday to today
+                const daysToCheck = dayOfWeek === 0 ? 7 : dayOfWeek; // If Sunday, check all 7 days
+                
+                for (let i = 0; i < daysToCheck; i++) {
+                    const checkDate = new Date(monday);
+                    checkDate.setDate(monday.getDate() + i);
+                    const checkDateStr = checkDate.toISOString().split('T')[0];
+                    
+                    const hasEntryThisDay = this.data.history.some(e => e.date === checkDateStr);
+                    
+                    if (!hasEntryThisDay) {
+                        return false; // Missing a day
+                    }
+                }
+                
+                return true; // Logged something every day!
+            },
+
+            // Get total points
+            getTotalPoints() {
+                return this.data.history.reduce((sum, e) => sum + e.points, 0);
+            },
+
+            // Update all displays
+            updateDisplay() {
+                this.updateHomeScreen();
+                this.updateStatsScreen();
+                this.updateRewardsScreen();
+            },
+
+            // Update home screen
+            updateHomeScreen() {
+                const points = this.getTodayPoints();
+                const target = 100;
+                const percentage = Math.min((points / target) * 100, 100);
+
+                document.getElementById('todayPoints').textContent = points;
+                document.getElementById('progressBar').style.width = percentage + '%';
+                document.getElementById('progressText').textContent = Math.round(percentage) + '%';
+
+                // Update streak display
+                const maxStreak = Math.max(...Object.values(this.data.streaks), 0);
+                const flames = '🔥'.repeat(Math.min(maxStreak, 5));
+                document.getElementById('streakDisplay').textContent = 
+                    maxStreak > 0 ? `${flames} ${maxStreak} Day Streak!` : '🔥 Start your streak!';
+            },
+
+            // Update stats screen
+            updateStatsScreen() {
+                const weekPoints = this.getWeekPoints();
+                
+                // Calculate Monday of current week
+                const today = new Date();
+                const dayOfWeek = today.getDay();
+                const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+                const monday = new Date(today);
+                monday.setDate(today.getDate() - daysSinceMonday);
+                const mondayStr = monday.toISOString().split('T')[0];
+                
+                const weekActions = this.data.history.filter(e => e.date >= mondayStr).length;
+
+                document.getElementById('weekPoints').textContent = weekPoints;
+                document.getElementById('weekActions').textContent = weekActions;
+                
+                // Calculate days in current week so far (Monday = 1, Sunday = 7)
+                const daysThisWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
+                document.getElementById('avgDaily').textContent = Math.round(weekPoints / daysThisWeek);
+
+                // Find best day
+                const dailyTotals = {};
+                this.data.history.forEach(entry => {
+                    if (!dailyTotals[entry.date]) dailyTotals[entry.date] = 0;
+                    dailyTotals[entry.date] += entry.points;
+                });
+
+                let bestDay = { date: '-', points: 0 };
+                Object.entries(dailyTotals).forEach(([date, points]) => {
+                    if (points > bestDay.points) {
+                        bestDay = { date, points };
+                    }
+                });
+
+                if (bestDay.date !== '-') {
+                    const dayName = new Date(bestDay.date).toLocaleDateString('en-US', { weekday: 'short' });
+                    document.getElementById('bestDay').textContent = `${dayName} (${bestDay.points}pts)`;
+                } else {
+                    document.getElementById('bestDay').textContent = '-';
+                }
+
+                // Update chart
+                this.renderChart();
+
+                // Update streaks list
+                this.renderStreaksList();
+            },
+
+            // Render weekly chart
+            renderChart() {
+                const chart = document.getElementById('weekChart');
+                chart.innerHTML = '';
+
+                const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                const dailyPoints = new Array(7).fill(0);
+                
+                // Calculate daily points for last 7 days
+                for (let i = 0; i < 7; i++) {
+                    const date = new Date(Date.now() - (6 - i) * 86400000).toISOString().split('T')[0];
+                    const points = this.data.history
+                        .filter(e => e.date === date)
+                        .reduce((sum, e) => sum + e.points, 0);
+                    dailyPoints[i] = points;
+                }
+
+                const maxPoints = Math.max(...dailyPoints, 100);
+                const today = new Date().getDay();
+
+                dailyPoints.forEach((points, index) => {
+                    const bar = document.createElement('div');
+                    bar.className = 'chart-bar';
+                    const height = (points / maxPoints) * 100;
+                    bar.style.height = height + '%';
+                    
+                    const label = document.createElement('div');
+                    label.className = 'label';
+                    label.textContent = days[(today - 6 + index + 7) % 7];
+                    
+                    const value = document.createElement('div');
+                    value.className = 'value';
+                    value.textContent = points;
+                    
+                    bar.appendChild(label);
+                    bar.appendChild(value);
+                    chart.appendChild(bar);
+                });
+            },
+
+            // Render streaks list
+            renderStreaksList() {
+                const list = document.getElementById('streaksList');
+                list.innerHTML = '';
+
+                const streaks = Object.entries(this.data.streaks)
+                    .filter(([_, count]) => count > 0)
+                    .sort((a, b) => b[1] - a[1]);
+
+                if (streaks.length === 0) {
+                    list.innerHTML = '<div class="stat-item"><span>No streaks yet - start today!</span></div>';
+                    return;
+                }
+
+                streaks.forEach(([actionId, count]) => {
+                    const action = this.actions.find(a => a.id === actionId);
+                    if (action) {
+                        const item = document.createElement('div');
+                        item.className = 'stat-item';
+                        const flames = '🔥'.repeat(Math.min(count, 5));
+                        item.innerHTML = `
+                            <span>${action.emoji} ${action.name}</span>
+                            <strong>${flames} ${count} days</strong>
+                        `;
+                        list.appendChild(item);
+                    }
+                });
+            },
+
+            // Update rewards screen
+            updateRewardsScreen() {
+                const totalPoints = this.getTotalPoints();
+                const weekPoints = this.getWeekPoints();
+                const hasParticipation = this.hasLoggedEveryDayThisWeek();
+                
+                document.getElementById('totalPoints').textContent = totalPoints;
+
+                const list = document.getElementById('rewardsList');
+                list.innerHTML = '';
+
+                this.rewards.forEach(reward => {
+                    const card = document.createElement('div');
+                    card.className = 'reward-card';
+                    
+                    // Handle weekly participation bonus
+                    if (reward.name === 'Weekly Participation') {
+                        if (hasParticipation) card.classList.add('unlocked');
+
+                        const today = new Date();
+                        const dayOfWeek = today.getDay();
+                        const daysChecked = dayOfWeek === 0 ? 7 : dayOfWeek;
+
+                        card.innerHTML = `
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <h3>${reward.emoji} ${reward.name}</h3>
+                                <strong>Weekly</strong>
+                            </div>
+                            <p>${reward.description}</p>
+                            <div class="reward-progress">
+                                ${hasParticipation 
+                                    ? '✅ EARNED! You logged something every day this week!' 
+                                    : `📅 ${daysChecked}/7 days logged - keep it up!`}
+                            </div>
+                        `;
+                    } else {
+                        // Handle weekly point-based rewards
+                        const unlocked = weekPoints >= reward.points;
+                        if (unlocked) card.classList.add('unlocked');
+
+                        const progress = Math.min((weekPoints / reward.points) * 100, 100);
+                        const remaining = Math.max(reward.points - weekPoints, 0);
+
+                        card.innerHTML = `
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <h3>${reward.emoji} ${reward.name}</h3>
+                                <strong>${reward.points} pts</strong>
+                            </div>
+                            <p>${reward.description}</p>
+                            <div class="reward-progress">
+                                ${unlocked ? '✅ UNLOCKED THIS WEEK!' : `⏳ ${remaining} points to unlock (resets Monday)`}
+                            </div>
+                        `;
+                    }
+
+                    list.appendChild(card);
+                });
+            },
+
+            // Show screen
+            showScreen(screen) {
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+
+                document.getElementById(screen + 'Screen').classList.add('active');
+                event.target.classList.add('active');
+
+                if (screen === 'stats') this.updateStatsScreen();
+                if (screen === 'rewards') this.updateRewardsScreen();
+            },
+
+            // Export data
+            exportData() {
+                const dataStr = JSON.stringify(this.data, null, 2);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'health-tracker-data.json';
+                a.click();
+                alert('✅ Data exported! Check your downloads folder.');
+            },
+
+            // Reset data
+            resetData() {
+                if (confirm('⚠️ Are you sure? This will delete ALL your data and cannot be undone!')) {
+                    if (confirm('Really? This will erase everything!')) {
+                        localStorage.removeItem('healthTrackerData');
+                        this.data = { history: [], streaks: {} };
+                        this.updateDisplay();
+                        alert('🗑️ All data has been reset.');
+                    }
+                }
+            },
+
+            // Check for new day and reset daily streaks
+            startNewDayCheck() {
+                setInterval(() => {
+                    const lastCheck = localStorage.getItem('lastDayCheck');
+                    const today = this.getToday();
+                    
+                    if (lastCheck !== today) {
+                        localStorage.setItem('lastDayCheck', today);
+                        this.updateDisplay();
+                    }
+                }, 60000); // Check every minute
+            }
+        };
+
+        // Initialize app when page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            app.init();
+        });
+    </script>
+</body>
+</html>
